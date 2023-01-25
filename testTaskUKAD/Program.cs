@@ -37,6 +37,11 @@ namespace testTaskUKAD
                 }
             }
             
+            result = await CrawlSite(httpClient, url, result);
+            if (url.EndsWith("/"))
+            {
+                url=url.Remove(url.Length - 1);
+            }
             string sitemapString = webClient.DownloadString(url+"/sitemap.xml");
             XmlDocument urlDoc= new XmlDocument();
             urlDoc.LoadXml(sitemapString);
@@ -44,11 +49,18 @@ namespace testTaskUKAD
             {
                 if (node["loc"] != null) 
                 {
-                    sitemapLinks.Add(node["loc"].InnerText);
+                    if (node["loc"].InnerText.StartsWith("/"))
+                    {
+                        sitemapLinks.Add(url + node["loc"].InnerText);
+                    }
+                    else
+                    {
+                        sitemapLinks.Add(node["loc"].InnerText);
+                    }
                 }
             }
 
-            result = await CrawlSite(httpClient,url,result);
+            
             Console.WriteLine();
             Console.WriteLine("Urls FOUNDED IN SITEMAP.XML but not founded after crawling a web site\r\n");
             foreach(var sitemapLink in sitemapLinks) 
@@ -131,8 +143,18 @@ namespace testTaskUKAD
             }
             catch(Exception ex) 
             {
-                Console.WriteLine(url + " Error status code" + ex.Message);
-                res.linkTime.Add(url, 0);
+                if (url.StartsWith("/")) 
+                {
+                    url = url.Remove(0, 1);
+                    Console.WriteLine(httpClient.BaseAddress+ url + " Error status code" + ex.Message);
+                    res.linkTime.Add(httpClient.BaseAddress + url, 0);
+                }
+                else 
+                {
+                    Console.WriteLine(url + " Error status code" + ex.Message);
+                    res.linkTime.Add(url, 0);
+                }
+                
                 return res;
             }
         }
