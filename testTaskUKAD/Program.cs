@@ -79,6 +79,7 @@ namespace testTaskUKAD
                     Console.WriteLine(link);
                 }
             }
+            result.linkTime = result.linkTime.OrderBy(x=>x.Value).ToDictionary(x=>x.Key, x=>x.Value);
             Console.WriteLine() ;
             Console.WriteLine("Timing");
             foreach(var link in result.linkTime)
