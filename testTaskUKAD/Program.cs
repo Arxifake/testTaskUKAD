@@ -7,12 +7,14 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using testTaskUKAD.Logic;
 
 namespace testTaskUKAD
 {
     internal class Program
     {
-        public static char[] charsToTrim = { '*', ' ', '\'', '\n', '\t', '\r', };
+        public static IURLBuilder Builder = new URLBuilder();
+        public static char[] charsToTrim = { '*', ' ', '\'', '\n', '\t', '\r' };
         static async System.Threading.Tasks.Task Main(string[] args)
         {
             bool retry = true;
@@ -49,23 +51,7 @@ namespace testTaskUKAD
             {
                 if (node["loc"] != null) 
                 {
-                    if (node["loc"].InnerText.StartsWith("/") || !node["loc"].InnerText.EndsWith("/"))
-                    {
-                        if (node["loc"].InnerText.StartsWith("/") && !node["loc"].InnerText.EndsWith("/")) 
-                        {
-                            sitemapLinks.Add(url + node["loc"].InnerText+"/");
-                        }
-                        else if (node["loc"].InnerText.StartsWith("/")) 
-                        {
-                            sitemapLinks.Add(url + node["loc"].InnerText);
-                        }
-                        else sitemapLinks.Add(node["loc"].InnerText + "/");
-
-                    }
-                    else
-                    {
-                        sitemapLinks.Add(node["loc"].InnerText);
-                    }
+                    sitemapLinks.Add(Builder.BuildURL(url, node["loc"].InnerText));
                 }
             }
 
@@ -106,41 +92,30 @@ namespace testTaskUKAD
         {
             try
             {
+                Console.WriteLine(url);
                 var timeBefore = DateTime.Now;
                 var html = await httpClient.GetStringAsync(url);
                 var totalTime = (DateTime.Now - timeBefore).TotalMilliseconds;
 
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
-
-                if (url.StartsWith("/") || !url.EndsWith("/"))
-                {
-                    if (url.StartsWith("/") && !url.EndsWith("/")) 
-                    {
-                        url = url.Remove(0, 1);
-                        res.linkTime.Add(httpClient.BaseAddress + url+"/", totalTime);
-                    }
-                    else if (url.StartsWith("/")) 
-                    {
-                        url = url.Remove(0, 1);
-                        res.linkTime.Add(httpClient.BaseAddress + url, totalTime);
-                    }
-                    else res.linkTime.Add(url + "/", totalTime);
-
-                }
-                else 
-                {
-                    res.linkTime.Add(url, totalTime);
-                }
+                res.linkTime.Add(Builder.BuildURL(httpClient.BaseAddress.ToString(), url), totalTime);
+                
                 
                 var newList = doc.DocumentNode.Descendants("a").Where(link => link.GetAttributeValue("href", "").Trim(charsToTrim).StartsWith("/") || link.GetAttributeValue("href", "").Trim(charsToTrim).StartsWith(url)).ToList();
                 foreach (var link in newList.ToList())
                 {
+                    var stringUrl = link.GetAttributeValue("href", "").Trim(charsToTrim);
+                    if (stringUrl.EndsWith("/")) 
+                    {
+                        stringUrl = stringUrl.Remove(stringUrl.Length-1,1);
+                    }
                     
-                    if (res.allLinks.Any(x => x.GetAttributeValue("href", "").Trim(charsToTrim) == link.GetAttributeValue("href", "").Trim(charsToTrim))||
-                        res.linkTime.ContainsKey(link.GetAttributeValue("href", "").Trim(charsToTrim)) ||
-                        link.GetAttributeValue("href","").Trim(charsToTrim)=="/" ||
-                        link.GetAttributeValue("href", "").Trim(charsToTrim).Contains("#"))
+                    if (res.allLinks.Any(x => x.GetAttributeValue("href", "").Trim(charsToTrim) == stringUrl) ||
+                        res.allLinks.Any(x => x.GetAttributeValue("href", "").Trim(charsToTrim) == stringUrl+'/') ||
+                        res.linkTime.ContainsKey(stringUrl) ||
+                        stringUrl == "" ||
+                        stringUrl.Contains("#"))
                     {
                         newList.Remove(link);
                     }
@@ -151,7 +126,6 @@ namespace testTaskUKAD
                 }
                 foreach (var link in newList)
                 {
-                    
                     var addResults = await CrawlSite(httpClient, link.GetAttributeValue("href", "").Trim(charsToTrim), res);
                     foreach (var addResult in addResults.linkTime)
                     {
@@ -164,7 +138,7 @@ namespace testTaskUKAD
                 }
                 return res;
             }
-            catch(Exception ex) 
+            catch(HttpRequestException ex) 
             {
                 if (url.StartsWith("/")) 
                 {
