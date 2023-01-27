@@ -49,9 +49,18 @@ namespace testTaskUKAD
             {
                 if (node["loc"] != null) 
                 {
-                    if (node["loc"].InnerText.StartsWith("/"))
+                    if (node["loc"].InnerText.StartsWith("/") || !node["loc"].InnerText.EndsWith("/"))
                     {
-                        sitemapLinks.Add(url + node["loc"].InnerText);
+                        if (node["loc"].InnerText.StartsWith("/") && !node["loc"].InnerText.EndsWith("/")) 
+                        {
+                            sitemapLinks.Add(url + node["loc"].InnerText+"/");
+                        }
+                        else if (node["loc"].InnerText.StartsWith("/")) 
+                        {
+                            sitemapLinks.Add(url + node["loc"].InnerText);
+                        }
+                        else sitemapLinks.Add(node["loc"].InnerText + "/");
+
                     }
                     else
                     {
@@ -104,10 +113,20 @@ namespace testTaskUKAD
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                if (url.StartsWith("/"))
+                if (url.StartsWith("/") || !url.EndsWith("/"))
                 {
-                    url = url.Remove(0,1);
-                    res.linkTime.Add(httpClient.BaseAddress + url, totalTime);
+                    if (url.StartsWith("/") && !url.EndsWith("/")) 
+                    {
+                        url = url.Remove(0, 1);
+                        res.linkTime.Add(httpClient.BaseAddress + url+"/", totalTime);
+                    }
+                    else if (url.StartsWith("/")) 
+                    {
+                        url = url.Remove(0, 1);
+                        res.linkTime.Add(httpClient.BaseAddress + url, totalTime);
+                    }
+                    else res.linkTime.Add(url + "/", totalTime);
+
                 }
                 else 
                 {
@@ -118,7 +137,10 @@ namespace testTaskUKAD
                 foreach (var link in newList.ToList())
                 {
                     
-                    if (res.allLinks.Any(x => x.GetAttributeValue("href", "").Trim(charsToTrim) == link.GetAttributeValue("href", "").Trim(charsToTrim))|| res.linkTime.ContainsKey(link.GetAttributeValue("href", "").Trim(charsToTrim)) || link.GetAttributeValue("href","").Trim(charsToTrim)=="/")
+                    if (res.allLinks.Any(x => x.GetAttributeValue("href", "").Trim(charsToTrim) == link.GetAttributeValue("href", "").Trim(charsToTrim))||
+                        res.linkTime.ContainsKey(link.GetAttributeValue("href", "").Trim(charsToTrim)) ||
+                        link.GetAttributeValue("href","").Trim(charsToTrim)=="/" ||
+                        link.GetAttributeValue("href", "").Trim(charsToTrim).Contains("#"))
                     {
                         newList.Remove(link);
                     }
