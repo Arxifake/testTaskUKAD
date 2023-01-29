@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace testTaskUKAD.Logic
 {
@@ -35,6 +37,31 @@ namespace testTaskUKAD.Logic
                 return url;
                 //sitemapLinks.Add(node["loc"].InnerText);
             }
+        }
+
+        public string BuildURLWithoutAttr(string baseUrl, string url)
+        {
+            var urlBuilder = "";
+            if (baseUrl.StartsWith("/"))
+            {
+                urlBuilder = url + baseUrl.Remove(0, 1);
+            }
+            else
+            {
+                urlBuilder = baseUrl;
+            }
+
+            urlBuilder = urlBuilder.Split('?','#')[0];
+
+            if (urlBuilder.EndsWith("/"))
+            {
+                return urlBuilder;
+            }
+            else 
+            {
+                return urlBuilder+"/";
+            }
+            
         }
     }
 }

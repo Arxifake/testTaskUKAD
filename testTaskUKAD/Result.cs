@@ -11,7 +11,7 @@ namespace testTaskUKAD
     {
         public Result() { }
         public Dictionary<string, double> linkTime { get; set; }
-         public List<HtmlNode> allLinks { get; set; }
+         public List<string> allLinks { get; set; }
 
 
 

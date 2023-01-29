@@ -9,5 +9,6 @@ namespace testTaskUKAD.Logic
     public interface IURLBuilder
     {
         string BuildURL(string baseUrl, string url);
+        string BuildURLWithoutAttr(string baseUrl, string url);
     }
 }
